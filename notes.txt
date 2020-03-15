@@ -1,0 +1,7 @@
+
+.NET Standard is a STANDARD that a framework should implement
+
+.NET Core is Microsoft's implementation of .NET Standard
+
+
+  
