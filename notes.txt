@@ -26,6 +26,10 @@ Level 500 Server Error
 
 asp.net core by default uses Json for serialization/deserialization
 
+use a separate Dto class for CUD ops as it will make it easier to refactor when needed
+
+
+
 
 
    
