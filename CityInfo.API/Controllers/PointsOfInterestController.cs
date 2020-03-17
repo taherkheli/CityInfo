@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using CityInfo.API.Models;
+using Microsoft.AspNetCore.JsonPatch;
 
 namespace CityInfo.API.Controllers
 {
@@ -93,5 +94,42 @@ namespace CityInfo.API.Controllers
 
       return NoContent();
     }
-  }
-}
+
+    [HttpPatch("{idPOI}", Name = "PartiallyUpdatePointOfInterest")]
+    public IActionResult PartiallyUpdatePointOfInterest(int id, int idPOI, [FromBody] JsonPatchDocument<PointOfInterestForUpdateDto> patchDoc)
+    {
+      //creating a separate DTO class fpr Update ops helps here as we do not have to worry about any attempt to update Id
+
+      var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == id);
+      if (city == null)
+        return NotFound();
+
+      var pointOfInterestFromStore = city.PointsOfInterest.FirstOrDefault(p => p.Id == idPOI);
+      if (pointOfInterestFromStore == null)
+        return NotFound();
+
+      var pointOfInterestToPatch = new PointOfInterestForUpdateDto()
+      {
+        Name = pointOfInterestFromStore.Name,
+        Description = pointOfInterestFromStore.Description
+      };
+
+      //to validate patchDoc we pass on ModelState and afterwards check if it(received JsonPatch doc) is structurally valid
+      patchDoc.ApplyTo(pointOfInterestToPatch, ModelState);   
+      if (!ModelState.IsValid)
+        return BadRequest(ModelState);
+
+      //here we must ensure that the applied patch did not do any undesired modifications
+      if (pointOfInterestToPatch.Description == pointOfInterestToPatch.Name)
+        ModelState.AddModelError("Description", "Description cannot be the same as Name");
+
+      if (!TryValidateModel(pointOfInterestToPatch))  
+        return BadRequest(ModelState);
+
+      //apply patch to real item
+      pointOfInterestFromStore.Name = pointOfInterestToPatch.Name;
+      pointOfInterestFromStore.Description = pointOfInterestToPatch.Description;
+
+      return NoContent();
+    }
+  }}
