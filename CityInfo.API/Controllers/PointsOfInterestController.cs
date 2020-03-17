@@ -4,6 +4,7 @@ using CityInfo.API.Models;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.Extensions.Logging;
 using System;
+using CityInfo.API.Services;
 
 namespace CityInfo.API.Controllers
 {
@@ -12,10 +13,12 @@ namespace CityInfo.API.Controllers
   public class PointsOfInterestController : ControllerBase
   {
     private readonly ILogger<PointsOfInterestController> _logger;
+    private readonly LocalMailService _mailService;
 
-    public PointsOfInterestController(ILogger<PointsOfInterestController> logger)
+    public PointsOfInterestController(ILogger<PointsOfInterestController> logger, LocalMailService mailService)
     {
       _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+      _mailService = mailService ?? throw new ArgumentNullException(nameof(mailService));
     }
 
     [HttpGet]
@@ -168,6 +171,7 @@ namespace CityInfo.API.Controllers
         return NotFound();
 
       city.PointsOfInterest.Remove(pointOfInterestFromStore);
+      _mailService.Send("POI deleted", $"POI {pointOfInterestFromStore.Name} with Id: {pointOfInterestFromStore.Id} was deleted");
 
       return NoContent();
     }
