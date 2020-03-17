@@ -33,7 +33,7 @@ namespace CityInfo.API.Controllers
       return Ok(poi);
     }
 
-    [HttpPost]
+    [HttpPost(Name = "CreatePointOfInterest")]
     public IActionResult CreatePointOfInterest(int id, [FromBody] PointOfInterestForCreationDto pointOfInterest)
     {
       //consumer request could not be de-serialzied into a valid object<PointOfInterestForCreationDto>
@@ -68,6 +68,30 @@ namespace CityInfo.API.Controllers
 
       city.PointsOfInterest.Add(finalPointOfInterest);
       return CreatedAtRoute("GetPointOfInterest", new { id, idPOI = finalPointOfInterest.Id }, finalPointOfInterest);
+    }
+
+    [HttpPut("{idPOI}", Name = "UpdatePointOfInterest")]
+    public IActionResult UpdatePointOfInterest(int id, int idPOI, [FromBody] PointOfInterestForCreationDto pointOfInterest)
+    {
+      if (pointOfInterest.Description == pointOfInterest.Name)
+        ModelState.AddModelError("Description", "Description cannot be the same as Name");
+
+      if (!ModelState.IsValid)
+        return BadRequest(ModelState);     
+
+      var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == id);
+      if (city == null)
+        return NotFound();
+
+      var pointOfInterestFromStore = city.PointsOfInterest.FirstOrDefault(p => p.Id == idPOI);
+      if (pointOfInterestFromStore == null)
+        return NotFound();
+
+      //PUT should do a FULL update of the resource. Any field not provided by the consumer should be set to default value
+      pointOfInterestFromStore.Name = pointOfInterest.Name;
+      pointOfInterestFromStore.Description = pointOfInterest.Description;
+
+      return NoContent();
     }
   }
 }
