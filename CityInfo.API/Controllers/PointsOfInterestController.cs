@@ -41,6 +41,17 @@ namespace CityInfo.API.Controllers
       //if (pointOfInterest == null)
       //  return BadRequest();
 
+      //ModelState checks against our input validation rules supplied via data annotation attributes in the model class PointOfInterestForCreationDto
+      //no need to explicitly write the code below as [ApiController] autmatically takes care of it
+      //if (!ModelState.IsValid)
+      //  return BadRequest();
+
+      if (pointOfInterest.Description == pointOfInterest.Name)
+        ModelState.AddModelError("Description", "Description cannot be the same as Name");
+
+      if (!ModelState.IsValid)
+        return BadRequest(ModelState);     //ModelState has to be provided because Model binding has already occured by now and [ApiController] cant do it for us
+      
       //we must check though that the city we want to add POI to does exist
       var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == id);
       if (city == null)
