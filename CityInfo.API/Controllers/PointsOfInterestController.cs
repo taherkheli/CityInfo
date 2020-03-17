@@ -2,6 +2,9 @@
 using System.Linq;
 using CityInfo.API.Models;
 using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.Extensions.Logging;
+using System;
+using CityInfo.API.Services;
 
 namespace CityInfo.API.Controllers
 {
@@ -9,6 +12,15 @@ namespace CityInfo.API.Controllers
   [Route("api/cities/{id}/pointsofinterest")]
   public class PointsOfInterestController : ControllerBase
   {
+    private readonly ILogger<PointsOfInterestController> _logger;
+    private readonly IMailService _mailService;
+
+    public PointsOfInterestController(ILogger<PointsOfInterestController> logger, IMailService mailService)
+    {
+      _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+      _mailService = mailService ?? throw new ArgumentNullException(nameof(mailService));
+    }
+
     [HttpGet]
     public IActionResult GetPointsOfInterest(int id)
     {
@@ -23,15 +35,29 @@ namespace CityInfo.API.Controllers
     [HttpGet("{idPOI}", Name = "GetPointOfInterest")]
     public IActionResult GetPointOfInterest(int id, int idPOI)
     {
-      var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == id);
-      if (city == null)
-        return NotFound();
+      try
+      {
+        //to test logcritical logs the exception. LogCritical was captured in Debug window but Information was not for some reason
+        //throw new Exception("Example exception");
+        
+        var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == id);
+        if (city == null)
+        {
+          _logger.LogInformation($"City with id: {id} wasn't found when accessing points of interest");
+          return NotFound();
+        }
 
-      var poi = city.PointsOfInterest.FirstOrDefault(p => p.Id == idPOI);
-      if (poi == null)
-        return NotFound();
+        var poi = city.PointsOfInterest.FirstOrDefault(p => p.Id == idPOI);
+        if (poi == null)
+          return NotFound();
 
-      return Ok(poi);
+        return Ok(poi);
+      }
+      catch (Exception ex)
+      {
+        _logger.LogCritical($"Exception while getting points of interest for city with id {id}", ex);
+        return StatusCode(500, "A problem happened while handling your request.");
+      }
     }
 
     [HttpPost(Name = "CreatePointOfInterest")]
@@ -145,6 +171,7 @@ namespace CityInfo.API.Controllers
         return NotFound();
 
       city.PointsOfInterest.Remove(pointOfInterestFromStore);
+      _mailService.Send("POI deleted", $"POI {pointOfInterestFromStore.Name} with Id: {pointOfInterestFromStore.Id} was deleted");
 
       return NoContent();
     }
