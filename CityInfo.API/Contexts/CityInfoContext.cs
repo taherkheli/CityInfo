@@ -19,7 +19,9 @@ namespace CityInfo.API.Contexts
 		public CityInfoContext(DbContextOptions<CityInfoContext> dbContextOptions)
 			:base(dbContextOptions)
 		{
-			Database.EnsureCreated();   //if DB exists already this will do nothing
+			//we do not want this to create a DB when migrations will execute and new up this DbContext. 
+			//Migrations will take care of creating the DB 
+			//Database.EnsureCreated();   //if DB exists already this will do nothing
 		}
 	}
 }
