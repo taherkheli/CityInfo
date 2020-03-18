@@ -5,8 +5,10 @@ namespace CityInfo.API.Services
 {
 	public interface ICityInfoRepo
 	{
-		IEnumerable<City> GetCities();
+		bool CityExists(int id);
 
+		IEnumerable<City> GetCities();
+		 
 		City GetCity(int id, bool includePOIs);
 
 		POI GetPOIforCity(int id, int poiId);

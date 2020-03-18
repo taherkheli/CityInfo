@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.Extensions.Logging;
 using System;
 using CityInfo.API.Services;
+using System.Collections.Generic;
 
 namespace CityInfo.API.Controllers
 {
@@ -14,50 +15,61 @@ namespace CityInfo.API.Controllers
   {
     private readonly ILogger<PointsOfInterestController> _logger;
     private readonly IMailService _mailService;
+    private readonly ICityInfoRepo _cityInfoRepo;
 
-    public PointsOfInterestController(ILogger<PointsOfInterestController> logger, IMailService mailService)
+    public PointsOfInterestController(ILogger<PointsOfInterestController> logger, IMailService mailService, ICityInfoRepo cityInfoRepo)
     {
       _logger = logger ?? throw new ArgumentNullException(nameof(logger));
       _mailService = mailService ?? throw new ArgumentNullException(nameof(mailService));
+      _cityInfoRepo = cityInfoRepo ?? throw new ArgumentNullException(nameof(cityInfoRepo));
+      
     }
 
     [HttpGet]
     public IActionResult GetPointsOfInterest(int id)
     {
-      var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == id);
+      if (!_cityInfoRepo.CityExists(id))
+      {
+        _logger.LogInformation($"City with id {id} wasn't found when accessing POI's.");
+        return NotFound();      
+      }
 
-      if (city == null)
-        return NotFound();
-      else
-        return Ok(city.PointsOfInterest);
+      var poiEntities = _cityInfoRepo.GetPOIsForCity(id);
+      var result = new List<PointOfInterestDto>();
+
+      foreach (var poiEntity in poiEntities)
+        result.Add(new PointOfInterestDto() 
+        {
+          Id = poiEntity.Id,
+          Name = poiEntity.Name,
+          Description = poiEntity.Description
+        });
+
+      return Ok(result);
     }
 
     [HttpGet("{idPOI}", Name = "GetPointOfInterest")]
     public IActionResult GetPointOfInterest(int id, int idPOI)
     {
-      try
+      if (!_cityInfoRepo.CityExists(id))
       {
-        //to test logcritical logs the exception. LogCritical was captured in Debug window but Information was not for some reason
-        //throw new Exception("Example exception");
-        
-        var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == id);
-        if (city == null)
-        {
-          _logger.LogInformation($"City with id: {id} wasn't found when accessing points of interest");
-          return NotFound();
-        }
-
-        var poi = city.PointsOfInterest.FirstOrDefault(p => p.Id == idPOI);
-        if (poi == null)
-          return NotFound();
-
-        return Ok(poi);
+        _logger.LogInformation($"City with id {id} wasn't found when looking for its POI's.");
+        return NotFound();
       }
-      catch (Exception ex)
+
+      var poiEntity = _cityInfoRepo.GetPOIforCity(id, idPOI);
+
+      if (poiEntity == null)
+        return NotFound();
+
+      var result = new PointOfInterestDto()
       {
-        _logger.LogCritical($"Exception while getting points of interest for city with id {id}", ex);
-        return StatusCode(500, "A problem happened while handling your request.");
-      }
+        Id = poiEntity.Id,
+        Name = poiEntity.Name,
+        Description = poiEntity.Description
+      };
+
+      return Ok(result);
     }
 
     [HttpPost(Name = "CreatePointOfInterest")]
