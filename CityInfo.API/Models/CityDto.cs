@@ -14,11 +14,11 @@ namespace CityInfo.API.Models
     {
       get 
       {
-        return PointsOfInterest.Count;
+        return POIs.Count;
       } 
     }
 
     //typically you'd do this instantiation in a ctor but auto property syntax allows you to get away with this instead
-    public ICollection<PointOfInterestDto> PointsOfInterest { get; set; } = new List<PointOfInterestDto>();
+    public ICollection<PointOfInterestDto> POIs { get; set; } = new List<PointOfInterestDto>();
   }
 }

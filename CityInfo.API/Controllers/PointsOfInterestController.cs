@@ -6,6 +6,8 @@ using Microsoft.Extensions.Logging;
 using System;
 using CityInfo.API.Services;
 using System.Collections.Generic;
+using AutoMapper;
+using CityInfo.API.Entities;
 
 namespace CityInfo.API.Controllers
 {
@@ -16,13 +18,14 @@ namespace CityInfo.API.Controllers
     private readonly ILogger<PointsOfInterestController> _logger;
     private readonly IMailService _mailService;
     private readonly ICityInfoRepo _cityInfoRepo;
+    private IMapper _mapper;
 
-    public PointsOfInterestController(ILogger<PointsOfInterestController> logger, IMailService mailService, ICityInfoRepo cityInfoRepo)
+    public PointsOfInterestController(ILogger<PointsOfInterestController> logger, IMailService mailService, ICityInfoRepo cityInfoRepo, IMapper mapper)
     {
       _logger = logger ?? throw new ArgumentNullException(nameof(logger));
       _mailService = mailService ?? throw new ArgumentNullException(nameof(mailService));
       _cityInfoRepo = cityInfoRepo ?? throw new ArgumentNullException(nameof(cityInfoRepo));
-      
+      _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
     }
 
     [HttpGet]
@@ -35,17 +38,8 @@ namespace CityInfo.API.Controllers
       }
 
       var poiEntities = _cityInfoRepo.GetPOIsForCity(id);
-      var result = new List<PointOfInterestDto>();
 
-      foreach (var poiEntity in poiEntities)
-        result.Add(new PointOfInterestDto() 
-        {
-          Id = poiEntity.Id,
-          Name = poiEntity.Name,
-          Description = poiEntity.Description
-        });
-
-      return Ok(result);
+      return Ok(_mapper.Map<IEnumerable<PointOfInterestDto>>(poiEntities));
     }
 
     [HttpGet("{idPOI}", Name = "GetPointOfInterest")]
@@ -62,14 +56,7 @@ namespace CityInfo.API.Controllers
       if (poiEntity == null)
         return NotFound();
 
-      var result = new PointOfInterestDto()
-      {
-        Id = poiEntity.Id,
-        Name = poiEntity.Name,
-        Description = poiEntity.Description
-      };
-
-      return Ok(result);
+      return Ok(_mapper.Map<PointOfInterestDto>(poiEntity));
     }
 
     [HttpPost(Name = "CreatePointOfInterest")]
@@ -96,7 +83,7 @@ namespace CityInfo.API.Controllers
       if (city == null)
         return NotFound();
 
-      var maxExistingId = CitiesDataStore.Current.Cities.SelectMany(c => c.PointsOfInterest).Max(p => p.Id);
+      var maxExistingId = CitiesDataStore.Current.Cities.SelectMany(c => c.POIs).Max(p => p.Id);
 
       var finalPointOfInterest = new PointOfInterestDto()
       {
@@ -105,7 +92,7 @@ namespace CityInfo.API.Controllers
         Description = pointOfInterest.Description
       };
 
-      city.PointsOfInterest.Add(finalPointOfInterest);
+      city.POIs.Add(finalPointOfInterest);
       return CreatedAtRoute("GetPointOfInterest", new { id, idPOI = finalPointOfInterest.Id }, finalPointOfInterest);
     }
 
@@ -122,7 +109,7 @@ namespace CityInfo.API.Controllers
       if (city == null)
         return NotFound();
 
-      var pointOfInterestFromStore = city.PointsOfInterest.FirstOrDefault(p => p.Id == idPOI);
+      var pointOfInterestFromStore = city.POIs.FirstOrDefault(p => p.Id == idPOI);
       if (pointOfInterestFromStore == null)
         return NotFound();
 
@@ -142,7 +129,7 @@ namespace CityInfo.API.Controllers
       if (city == null)
         return NotFound();
 
-      var pointOfInterestFromStore = city.PointsOfInterest.FirstOrDefault(p => p.Id == idPOI);
+      var pointOfInterestFromStore = city.POIs.FirstOrDefault(p => p.Id == idPOI);
       if (pointOfInterestFromStore == null)
         return NotFound();
 
@@ -178,11 +165,11 @@ namespace CityInfo.API.Controllers
       if (city == null)
         return NotFound();
 
-      var pointOfInterestFromStore = city.PointsOfInterest.FirstOrDefault(p => p.Id == idPOI);
+      var pointOfInterestFromStore = city.POIs.FirstOrDefault(p => p.Id == idPOI);
       if (pointOfInterestFromStore == null)
         return NotFound();
 
-      city.PointsOfInterest.Remove(pointOfInterestFromStore);
+      city.POIs.Remove(pointOfInterestFromStore);
       _mailService.Send("POI deleted", $"POI {pointOfInterestFromStore.Name} with Id: {pointOfInterestFromStore.Id} was deleted");
 
       return NoContent();

@@ -1,4 +1,5 @@
-﻿using CityInfo.API.Models;
+﻿using AutoMapper;
+using CityInfo.API.Models;
 using CityInfo.API.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -12,67 +13,34 @@ namespace CityInfo.API.Controllers
   public class CitiesController : ControllerBase
   {
     private readonly ICityInfoRepo _cityInfoRepo;
+    private readonly IMapper _mapper;
 
-    public CitiesController(ICityInfoRepo cityInfoRepo)
+    public CitiesController(ICityInfoRepo cityInfoRepo, IMapper mapper)
     {
       _cityInfoRepo = cityInfoRepo ?? throw new ArgumentNullException(nameof(cityInfoRepo));
+      _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
     }
 
     [HttpGet]
     public IActionResult GetCities()
     {
       var cityEntities = _cityInfoRepo.GetCities();
-      var result = new List<CityWithoutPOIsDto>() { };
 
-      foreach (var cityEntity in cityEntities)
-        result.Add(new CityWithoutPOIsDto()
-        {
-          Id = cityEntity.Id,
-          Name = cityEntity.Name,
-          Description = cityEntity.Description
-        });     
-
-      return Ok(result);
+      return Ok(_mapper.Map<IEnumerable<CityWithoutPOIsDto>>(cityEntities));
     }
 
     [HttpGet("{id}")]
     public IActionResult GetCity(int id, bool includePOIs = false)
     {
-      var cityEntity = _cityInfoRepo.GetCity(id, includePOIs);
+      var city = _cityInfoRepo.GetCity(id, includePOIs);
 
-      if (cityEntity == null)
+      if (city == null)
         return NotFound();
 
       if (includePOIs)
-      {
-        var resultCity = new CityDto()
-        {
-          Id = cityEntity.Id,
-          Name = cityEntity.Name,
-          Description = cityEntity.Description
-        };
-
-        foreach (var poi in cityEntity.POIs)
-          resultCity.PointsOfInterest.Add(new PointOfInterestDto()
-          {
-            Id = poi.Id,
-            Name = poi.Name,
-            Description = poi.Description
-          });
-
-        return Ok(resultCity);
-      }
-      else 
-      {
-        var resultCityWithoutPOIs = new CityWithoutPOIsDto()
-        {
-          Id = cityEntity.Id,
-          Name = cityEntity.Name,
-          Description = cityEntity.Description
-        };
-
-        return Ok(resultCityWithoutPOIs);
-      }
+        return Ok(_mapper.Map<CityDto>(city));      
+      else
+        return Ok(_mapper.Map<CityWithoutPOIsDto>(city));
     }
   }
 }
