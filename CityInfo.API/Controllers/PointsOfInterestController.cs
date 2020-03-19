@@ -1,13 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System.Linq;
+﻿using AutoMapper;
+using CityInfo.API.Entities;
 using CityInfo.API.Models;
+using CityInfo.API.Services;
 using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
-using CityInfo.API.Services;
 using System.Collections.Generic;
-using AutoMapper;
-using CityInfo.API.Entities;
+using System.Linq;
 
 namespace CityInfo.API.Controllers
 {
@@ -79,21 +79,18 @@ namespace CityInfo.API.Controllers
         return BadRequest(ModelState);     //ModelState has to be provided because Model binding has already occured by now and [ApiController] cant do it for us
       
       //we must check though that the city we want to add POI to does exist
-      var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == id);
-      if (city == null)
+      if (!_cityInfoRepo.CityExists(id))
         return NotFound();
 
-      var maxExistingId = CitiesDataStore.Current.Cities.SelectMany(c => c.POIs).Max(p => p.Id);
+      var poiEntity = _mapper.Map<POI>(pointOfInterest);
 
-      var finalPointOfInterest = new PointOfInterestDto()
-      {
-        Id = ++maxExistingId,
-        Name = pointOfInterest.Name,
-        Description = pointOfInterest.Description
-      };
+      _cityInfoRepo.AddPoiForCity(id, poiEntity);
+      _cityInfoRepo.Save();
 
-      city.POIs.Add(finalPointOfInterest);
-      return CreatedAtRoute("GetPointOfInterest", new { id, idPOI = finalPointOfInterest.Id }, finalPointOfInterest);
+      //we still want to return a Dto
+      var createdPoiToReturn = _mapper.Map<PointOfInterestDto>(poiEntity);
+
+      return CreatedAtRoute("GetPointOfInterest", new { id, idPOI = createdPoiToReturn.Id }, createdPoiToReturn);
     }
 
     [HttpPut("{idPOI}", Name = "UpdatePointOfInterest")]

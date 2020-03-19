@@ -16,6 +16,13 @@ namespace CityInfo.API.Services
 			_context = context ?? throw new ArgumentNullException(nameof(context));
 		}
 
+		public void AddPoiForCity(int id, POI poi)
+		{
+			var city = GetCity(id, false);
+			city.POIs.Add(poi);
+
+		}
+
 		public bool CityExists(int id)
 		{
 			return _context.Cities.Any<City>(c => c.Id == id);
@@ -42,6 +49,11 @@ namespace CityInfo.API.Services
 		public IEnumerable<POI> GetPOIsForCity(int id)
 		{
 			return _context.POIs.Where(p => p.CityId == id).ToList();
+		}
+
+		public bool Save()
+		{
+			return (_context.SaveChanges() >= 0);
 		}
 	}
 }
