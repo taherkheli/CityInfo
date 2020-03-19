@@ -1,3 +1,22 @@
+Followed Kevin Dockx's excellent course on pluralsight
+
+Building Your First API with ASP.NET Core
+https://app.pluralsight.com/library/courses/asp-dotnet-core-api-building-first/discussion
+
+- ASP.Net Core 2.1 MVC 'rest' api
+- Uses EF Core for connecting and persisting data to a localDB SQL datastore
+- persistence ignorant via repo pattern
+- includes logging and a custom service
+- uses AutoMapper to map between Dto and entity object instances
+
+Deployment:
+To deploy to Azure some work would still be needed e.g. setting up a cloud DB and updating configuration with 
+connStr, maybe azure keyvault for storing the connStr
+
+For now just leaving it as it is. Adding a azure build pipeline though.
+
+
+***** previous notes **********
 
 .NET Standard is a STANDARD that a framework should implement
 
@@ -17,16 +36,14 @@ MVC is a design pattern intended for only the presentation layer of an N tier/la
 
 1. An API consumer (typically another web app) triggers an action on the controller
 2. Controller sends the request with any input parameters to the business logic or DAL to get some data
-3. Controller then sends a model to the VIEW. (this is typically but any razor or html but just a JSON representation of the returned data)
+3. Controller then sends a model to the VIEW. (this could razor or html but is typically just a JSON representation of the returned data)
 
 Routing is responsible for mapping an HTTP request uri to the appropriate controller method
- 
+Level 200 OK kinda resonse 
 Level 400 Client Error
 Level 500 Server Error
 
-asp.net core by default uses Json for serialization/deserialization
 
-use a separate Dto class for CUD ops as it will make it easier to refactor when needed
 
 
 
