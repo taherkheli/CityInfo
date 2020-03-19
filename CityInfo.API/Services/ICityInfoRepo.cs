@@ -20,5 +20,7 @@ namespace CityInfo.API.Services
 		bool Save();
 
 		void UpdatePoiForCity(int id, POI poi);
+
+		void DeletePoi(POI poi);
 	}
 }

@@ -20,7 +20,6 @@ namespace CityInfo.API.Services
 		{
 			var city = GetCity(id, false);
 			city.POIs.Add(poi);
-
 		}
 
 		public bool CityExists(int id)
@@ -60,6 +59,11 @@ namespace CityInfo.API.Services
 		{
 			//EF Core tracks changes so Save() persists them automatically but other technologies may not have the same way
 			//of handling changes/updates. In those cases we'd need soem code here but controlelr code won't break now
+		}
+
+		public void DeletePoi(POI poi)
+		{
+			_context.POIs.Remove(poi);
 		}
 	}
 }
