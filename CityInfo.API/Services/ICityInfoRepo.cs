@@ -18,5 +18,7 @@ namespace CityInfo.API.Services
 		void AddPoiForCity(int id, POI poi);
 
 		bool Save();
+
+		void UpdatePoiForCity(int id, POI poi);
 	}
 }

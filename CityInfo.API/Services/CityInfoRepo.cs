@@ -55,5 +55,11 @@ namespace CityInfo.API.Services
 		{
 			return (_context.SaveChanges() >= 0);
 		}
+
+		public void UpdatePoiForCity(int id, POI poi)
+		{
+			//EF Core tracks changes so Save() persists them automatically but other technologies may not have the same way
+			//of handling changes/updates. In those cases we'd need soem code here but controlelr code won't break now
+		}
 	}
 }

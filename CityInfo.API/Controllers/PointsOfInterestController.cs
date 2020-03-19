@@ -94,25 +94,24 @@ namespace CityInfo.API.Controllers
     }
 
     [HttpPut("{idPOI}", Name = "UpdatePointOfInterest")]
-    public IActionResult UpdatePointOfInterest(int id, int idPOI, [FromBody] PointOfInterestForCreationDto pointOfInterest)
+    public IActionResult UpdatePointOfInterest(int id, int idPOI, [FromBody] PointOfInterestForUpdateDto pointOfInterest)
     {
       if (pointOfInterest.Description == pointOfInterest.Name)
         ModelState.AddModelError("Description", "Description cannot be the same as Name");
 
       if (!ModelState.IsValid)
-        return BadRequest(ModelState);     
+        return BadRequest(ModelState);
 
-      var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == id);
-      if (city == null)
+      if (!_cityInfoRepo.CityExists(id))
         return NotFound();
 
-      var pointOfInterestFromStore = city.POIs.FirstOrDefault(p => p.Id == idPOI);
-      if (pointOfInterestFromStore == null)
+      var poiEntity = _cityInfoRepo.GetPOIforCity(id, idPOI);
+      if (poiEntity == null)
         return NotFound();
 
-      //PUT should do a FULL update of the resource. Any field not provided by the consumer should be set to default value
-      pointOfInterestFromStore.Name = pointOfInterest.Name;
-      pointOfInterestFromStore.Description = pointOfInterest.Description;
+      _mapper.Map(pointOfInterest, poiEntity);   //source is Dto we received, destination is the entity we will persist
+      _cityInfoRepo.UpdatePoiForCity(id, poiEntity);
+      _cityInfoRepo.Save();
 
       return NoContent();
     }
