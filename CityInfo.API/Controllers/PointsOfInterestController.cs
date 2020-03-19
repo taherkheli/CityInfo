@@ -42,8 +42,8 @@ namespace CityInfo.API.Controllers
       return Ok(_mapper.Map<IEnumerable<PointOfInterestDto>>(poiEntities));
     }
 
-    [HttpGet("{idPOI}", Name = "GetPointOfInterest")]
-    public IActionResult GetPointOfInterest(int id, int idPOI)
+    [HttpGet("{idpoi}", Name = "GetPointOfInterest")]
+    public IActionResult GetPointOfInterest(int id, int idPoi)
     {
       if (!_cityInfoRepo.CityExists(id))
       {
@@ -51,7 +51,7 @@ namespace CityInfo.API.Controllers
         return NotFound();
       }
 
-      var poiEntity = _cityInfoRepo.GetPOIforCity(id, idPOI);
+      var poiEntity = _cityInfoRepo.GetPOIforCity(id, idPoi);
 
       if (poiEntity == null)
         return NotFound();
@@ -93,8 +93,8 @@ namespace CityInfo.API.Controllers
       return CreatedAtRoute("GetPointOfInterest", new { id, idPOI = createdPoiToReturn.Id }, createdPoiToReturn);
     }
 
-    [HttpPut("{idPOI}", Name = "UpdatePointOfInterest")]
-    public IActionResult UpdatePointOfInterest(int id, int idPOI, [FromBody] PointOfInterestForUpdateDto pointOfInterest)
+    [HttpPut("{idpoi}", Name = "UpdatePointOfInterest")]
+    public IActionResult UpdatePointOfInterest(int id, int idPoi, [FromBody] PointOfInterestForUpdateDto pointOfInterest)
     {
       if (pointOfInterest.Description == pointOfInterest.Name)
         ModelState.AddModelError("Description", "Description cannot be the same as Name");
@@ -105,7 +105,7 @@ namespace CityInfo.API.Controllers
       if (!_cityInfoRepo.CityExists(id))
         return NotFound();
 
-      var poiEntity = _cityInfoRepo.GetPOIforCity(id, idPOI);
+      var poiEntity = _cityInfoRepo.GetPOIforCity(id, idPoi);
       if (poiEntity == null)
         return NotFound();
 
@@ -116,52 +116,46 @@ namespace CityInfo.API.Controllers
       return NoContent();
     }
 
-    [HttpPatch("{idPOI}", Name = "PartiallyUpdatePointOfInterest")]
-    public IActionResult PartiallyUpdatePointOfInterest(int id, int idPOI, [FromBody] JsonPatchDocument<PointOfInterestForUpdateDto> patchDoc)
+    [HttpPatch("{idpoi}", Name = "PartiallyUpdatePointOfInterest")]
+    public IActionResult PartiallyUpdatePointOfInterest(int id, int idPoi, [FromBody] JsonPatchDocument<PointOfInterestForUpdateDto> patchDoc)
     {
-      //creating a separate DTO class fpr Update ops helps here as we do not have to worry about any attempt to update Id
-
-      var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == id);
-      if (city == null)
+      if(!_cityInfoRepo.CityExists(id))
         return NotFound();
 
-      var pointOfInterestFromStore = city.POIs.FirstOrDefault(p => p.Id == idPOI);
-      if (pointOfInterestFromStore == null)
+      var poiEntity = _cityInfoRepo.GetPOIforCity(id, idPoi);
+      if (poiEntity == null)
         return NotFound();
 
-      var pointOfInterestToPatch = new PointOfInterestForUpdateDto()
-      {
-        Name = pointOfInterestFromStore.Name,
-        Description = pointOfInterestFromStore.Description
-      };
+      var poiDto = _mapper.Map<PointOfInterestForUpdateDto>(poiEntity);
 
       //to validate patchDoc we pass on ModelState and afterwards check if it(received JsonPatch doc) is structurally valid
-      patchDoc.ApplyTo(pointOfInterestToPatch, ModelState);   
+      patchDoc.ApplyTo(poiDto, ModelState);   
       if (!ModelState.IsValid)
         return BadRequest(ModelState);
 
       //here we must ensure that the applied patch did not do any undesired modifications
-      if (pointOfInterestToPatch.Description == pointOfInterestToPatch.Name)
+      if (poiDto.Description == poiDto.Name)
         ModelState.AddModelError("Description", "Description cannot be the same as Name");
 
-      if (!TryValidateModel(pointOfInterestToPatch))  
+      if (!TryValidateModel(poiDto))  
         return BadRequest(ModelState);
 
       //apply patch to real item
-      pointOfInterestFromStore.Name = pointOfInterestToPatch.Name;
-      pointOfInterestFromStore.Description = pointOfInterestToPatch.Description;
+      _mapper.Map(poiDto, poiEntity);   //source is the Dto after application of patch, destination is poi entity we will persist
+      _cityInfoRepo.UpdatePoiForCity(id, poiEntity);
+      _cityInfoRepo.Save();
 
       return NoContent();
     }
 
-    [HttpDelete("{idPOI}", Name = "DeletePointOfInterest")]
-    public IActionResult DeletePointOfInterest(int id, int idPOI)
+    [HttpDelete("{idpoi}", Name = "DeletePointOfInterest")]
+    public IActionResult DeletePointOfInterest(int id, int idPoi)
     {
       var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == id);
       if (city == null)
         return NotFound();
 
-      var pointOfInterestFromStore = city.POIs.FirstOrDefault(p => p.Id == idPOI);
+      var pointOfInterestFromStore = city.POIs.FirstOrDefault(p => p.Id == idPoi);
       if (pointOfInterestFromStore == null)
         return NotFound();
 
